@@ -74,6 +74,9 @@ def rap_strategyQA(base_model: LanguageModel,
     correct_count = 0
     ### write all answers to json for submission
     answer_dict = {}
+    if os.path.isfile(os.path.join(log_dir, 'all_answers-1.json')):
+        with open(os.path.join(log_dir, 'all_answers-1.json')) as f:
+            answer_dict = json.load(f)
     for i, example in enumerate(tqdm(dataset, total=resume + len(dataset), initial=resume,
                                      desc='strategyQA', disable=disable_tqdm)):
         print(example["question"])
@@ -97,22 +100,24 @@ def rap_strategyQA(base_model: LanguageModel,
         # accuracy = correct_count / (i + 1)
         # log_str = f'Case #{resume + i + 1}: {correct=}, {output=}, {answer=} ; {accuracy=:.3f} ({correct_count}/{i + 1})'
         # tqdm.write(log_str)
-        # if not disable_log:
-        #     with open(os.path.join(log_dir, 'result.log'), 'a') as f:
-        #         print(log_str, file=f)
-        #     with open(os.path.join(log_dir, 'algo_output', f'{resume + i + 1}.pkl'), 'wb') as f:
-        #         pickle.dump(algo_output, f)
-        #     if isinstance(search_algo, MCTS) and output_trace_in_each_iter:
-        #         try:
-        #             with open(os.path.join(log_dir, 'algo_output', f'{resume + i + 1}.json'), 'w') as f:
-        #                 # noinspection PyTypeChecker
-        #                 print(TreeLog.from_mcts_results(algo_output, node_data_factory=node_visualizer), file=f)
-        #         except Exception as e: 
-        #             print(e)
-        #             print(algo_output)
+        if not disable_log:
+            # with open(os.path.join(log_dir, 'result.log'), 'a') as f:
+            #     print(log_str, file=f)
+            with open(os.path.join(log_dir, 'algo_output', f'{resume + i + 1}.pkl'), 'wb') as f:
+                pickle.dump(algo_output, f)
+            if isinstance(search_algo, MCTS) and output_trace_in_each_iter:
+                try:
+                    with open(os.path.join(log_dir, 'algo_output', f'{resume + i + 1}.json'), 'w') as f:
+                        # noinspection PyTypeChecker
+                        print(TreeLog.from_mcts_results(algo_output, node_data_factory=node_visualizer), file=f)
+                except Exception as e: 
+                    print(e)
+                    print(algo_output)
         ### add to answer dict
+        log_str = f"Case #{resume + i + 1}: qid={example['qid']}, {output=}"
+        tqdm.write(log_str)
         answer_dict[example['qid']] = {"answer": output, "decomposition": [], "paragraphs": []}
-        with open(os.path.join(log_dir, 'all_answers.json'), 'w') as f:
+        with open(os.path.join(log_dir, 'all_answers-1.json'), 'w') as f:
             json.dump(answer_dict, f, indent=2)
         # break
 
