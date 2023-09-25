@@ -21,4 +21,4 @@ def get_prompt_examples(path):
 
 
 def extract_golden_answer(example):
-    return example['answer'].strip()
+    return example['answer']#.strip()
