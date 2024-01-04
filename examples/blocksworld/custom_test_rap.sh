@@ -1,0 +1,1 @@
+python examples/rap_blocksworld/rap_inference.py --data_path 'examples/rap_blocksworld/data/split_v1/split_v1_step_2_data.json' --depth_limit 2 --model_dir $LLAMA2_CKPTS --lora_dir None --batch_size 1 --output_trace_in_each_iter --prompt_path examples/rap_blocksworld/prompts/pool_prompt_v1.json --log_dir logs/v1_step_openai --mem_map [16,22]

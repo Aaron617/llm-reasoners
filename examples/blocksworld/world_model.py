@@ -88,8 +88,11 @@ class BlocksWorldModel(WorldModel):
         else:
             raise ValueError("Invalid action")
         world_update_prompt = self.prompt[key].format(block_states, action.capitalize() + ".")
-        world_output = self.base_model.generate([world_update_prompt],
-                                    eos_token_id="\n", hide_input=True, temperature=0).text[0].strip()
+        # world_output = self.base_model.generate([world_update_prompt],
+                                    # eos_token_id="\n", hide_input=True, temperature=0).text[0].strip()
+        # TODO @mengkang For OpenAI Models
+        # print(world_update_prompt)
+        world_output = self.base_model.generate([world_update_prompt], stop='\n').text[0].strip()
         new_state = utils.apply_change(world_output, block_states)
         return new_state
 

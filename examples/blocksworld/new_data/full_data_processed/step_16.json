@@ -1,0 +1,29 @@
+{
+    "raw_data": [
+        [
+            "LLMs-Planning/llm_planning_analysis/instances/blocksworld/generated_basic/instance-464.pddl",
+            "(unstack c a)\n(put-down c)\n(unstack a b)\n(put-down a)\n(unstack b e)\n(put-down b)\n(unstack e d)\n(put-down e)\n(pick-up d)\n(stack d a)\n(pick-up c)\n(stack c d)\n(pick-up b)\n(stack b c)\n(pick-up e)\n(stack e b)\n",
+            16
+        ]
+    ],
+    "gold_states": [
+        [
+            "the orange block is in the hand, the red block is clear, the hand is holding the orange block, the blue block is on top of the white block, the red block is on top of the blue block, the white block is on top of the yellow block and the yellow block is on the table",
+            "the orange block is clear, the red block is clear, the hand is empty, the blue block is on top of the white block, the red block is on top of the blue block, the white block is on top of the yellow block, the orange block is on the table and the yellow block is on the table",
+            "the blue block is clear, the orange block is clear, the red block is in the hand, the hand is holding the red block, the blue block is on top of the white block, the white block is on top of the yellow block, the orange block is on the table and the yellow block is on the table",
+            "the blue block is clear, the orange block is clear, the red block is clear, the hand is empty, the blue block is on top of the white block, the white block is on top of the yellow block, the orange block is on the table, the red block is on the table and the yellow block is on the table",
+            "the blue block is in the hand, the orange block is clear, the red block is clear, the white block is clear, the hand is holding the blue block, the white block is on top of the yellow block, the orange block is on the table, the red block is on the table and the yellow block is on the table",
+            "the blue block is clear, the orange block is clear, the red block is clear, the white block is clear, the hand is empty, the white block is on top of the yellow block, the blue block is on the table, the orange block is on the table, the red block is on the table and the yellow block is on the table",
+            "the blue block is clear, the orange block is clear, the red block is clear, the white block is in the hand, the yellow block is clear, the hand is holding the white block, the blue block is on the table, the orange block is on the table, the red block is on the table and the yellow block is on the table",
+            "the blue block is clear, the orange block is clear, the red block is clear, the white block is clear, the yellow block is clear, the hand is empty, the blue block is on the table, the orange block is on the table, the red block is on the table, the white block is on the table and the yellow block is on the table",
+            "the blue block is clear, the orange block is clear, the red block is clear, the white block is clear, the yellow block is in the hand, the hand is holding the yellow block, the blue block is on the table, the orange block is on the table, the red block is on the table and the white block is on the table",
+            "the blue block is clear, the orange block is clear, the white block is clear, the yellow block is clear, the hand is empty, the yellow block is on top of the red block, the blue block is on the table, the orange block is on the table, the red block is on the table and the white block is on the table",
+            "the blue block is clear, the orange block is in the hand, the white block is clear, the yellow block is clear, the hand is holding the orange block, the yellow block is on top of the red block, the blue block is on the table, the red block is on the table and the white block is on the table",
+            "the blue block is clear, the orange block is clear, the white block is clear, the hand is empty, the orange block is on top of the yellow block, the yellow block is on top of the red block, the blue block is on the table, the red block is on the table and the white block is on the table",
+            "the blue block is in the hand, the orange block is clear, the white block is clear, the hand is holding the blue block, the orange block is on top of the yellow block, the yellow block is on top of the red block, the red block is on the table and the white block is on the table",
+            "the blue block is clear, the white block is clear, the hand is empty, the blue block is on top of the orange block, the orange block is on top of the yellow block, the yellow block is on top of the red block, the red block is on the table and the white block is on the table",
+            "the blue block is clear, the white block is in the hand, the hand is holding the white block, the blue block is on top of the orange block, the orange block is on top of the yellow block, the yellow block is on top of the red block and the red block is on the table",
+            "the white block is clear, the hand is empty, the blue block is on top of the orange block, the orange block is on top of the yellow block, the white block is on top of the blue block, the yellow block is on top of the red block and the red block is on the table"
+        ]
+    ]
+}

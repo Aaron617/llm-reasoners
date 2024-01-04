@@ -14,6 +14,7 @@ except:
                       "with `pip install tarski`.")
 try:
     from pddl.logic import Predicate, constants, variables
+    from pddl.logic.terms import Term
     from pddl.core import Domain, Problem, Action, Requirements
     from pddl.formatter import domain_to_string, problem_to_string
     from pddl import parse_problem as parse_pddl_problem
@@ -49,6 +50,11 @@ def instance_to_text_blocksworld(problem, get_plan, data, plan_code="", shuffle=
             action = action.strip("(").strip(")")
             act_name, objs = action.split(" ")[0], action.split(" ")[1:]
             objs = [OBJS[obj] for obj in objs]
+            # TODO @mengkang specific implementation for "holding x"
+            # if act_name == 'holding':
+            #     objs = objs + objs
+            #     PLAN += data['actions'][act_name].format(*objs) + "\n"
+            # else:
             PLAN += data['actions'][act_name].format(*objs) + "\n"
         PLAN += "[PLAN END]\n"
 
@@ -59,6 +65,33 @@ def parse_problem(problem, data, shuffle):
         return sorted(init_atoms, key=lambda x: x.symbol.name+" "+\
                       " ".join([subterm.name for subterm in x.subterms]))
 
+    # TODO add by @mengkang copied from def apply_change(change, state):
+    def sort_states(states):
+        states = [s for s in states if s != ""]
+        priority_states = []
+        for s in states:
+            if "have that" in s:
+                priority_states.append(0)
+            elif "clear" in s:
+                priority_states.append(1)
+            elif "in the hand" in s:
+                priority_states.append(1)
+            elif "the hand is" in s:
+                priority_states.append(2)
+            elif "on top of" in s:
+                priority_states.append(3)
+            elif "on the table" in s:
+                priority_states.append(4)
+            else:
+                print("Error: unknown state")
+                print(s)
+                if torch.distributed.is_initialized():
+                    torch.distributed.barrier()
+                raise Exception("ERROR")
+        sorted_states = [x.strip() for _, x in sorted(zip(priority_states, states))]
+        return sorted_states
+
+
     def parse(init_goal_preds, OBJS):
         TEXT = ""
         predicates = []
@@ -68,11 +101,23 @@ def parse_problem(problem, data, shuffle):
             objs = []
             for subterm in atom.subterms:
                 objs.append(OBJS[subterm.name])
-            predicates.append(data['predicates'][atom.symbol.name].format(*objs))
+            # TODO @mengkang specific implementation for 'holding'
+            name = atom.symbol.name
+            if name == 'holding':
+                objs = objs + objs
+                holding_str = data['predicates'][name].format(*objs)
+                predicates += holding_str.split(', ')
+            else:
+                predicates.append(data['predicates'][name].format(*objs))
+        # TODO @mengkang we need to sort the predicates to align with that in apply_change
+        predicates = sort_states(predicates)
         if len(predicates) > 1:
             TEXT += ", ".join(predicates[:-1]) + f" and {predicates[-1]}"
         else:
             TEXT += predicates[0]
+        # TODO @mengkang to align with that in apply_change
+        # print(TEXT)
+        # TEXT = TEXT + '.' if TEXT[-1] != '.' else TEXT
         return TEXT
     
     OBJS = data['encoded_objects']
@@ -131,6 +176,9 @@ def compute_plan(domain, instance, plan_file="sas_plan"):
     
 
 def get_intermediate_states(domain_path, instance, config_data, shuffle=False):
+    '''
+    instance: the raw data
+    '''
     problem_path, plan_code, _ = instance
     plan_path = "temp_plan"
     temp_problem_path = "temp_problem"
@@ -139,6 +187,7 @@ def get_intermediate_states(domain_path, instance, config_data, shuffle=False):
     val_path = os.getenv("VAL")
     cmd = f"{val_path}/validate -v {domain_path} {problem_path} {plan_path}"
     response = os.popen(cmd).read()
+    # print(response)
     change_str = response.split("-----------------------")[-1]\
         .split("Plan executed successfully")[0]\
         .strip().split("\n\n")
@@ -150,7 +199,7 @@ def get_intermediate_states(domain_path, instance, config_data, shuffle=False):
     states = []
     cur_state = problem.init
     even = True
-    for change in changes:
+    for step_idx, change in enumerate(changes):
         even = not even
         del_list = [c.replace("Deleting ", "") for c in change if "Deleting" in c]
         add_list = [c.replace("Adding ", "") for c in change if "Adding" in c]
@@ -159,6 +208,7 @@ def get_intermediate_states(domain_path, instance, config_data, shuffle=False):
             if str(i) not in del_list:
                 s.add(i)
         for i in add_list:
+            # TODO @mengkang this requires pddl==0.3.1
             s.add(Predicate(* i[1:-1].split(" ")))
         p = Problem(name=problem.name, domain_name=problem.domain_name, requirements=problem.requirements, objects=problem.objects, init=s.copy(), goal=problem.goal)
         with open(temp_problem_path, "w") as f:
@@ -167,6 +217,52 @@ def get_intermediate_states(domain_path, instance, config_data, shuffle=False):
         if even:
             TEMP_INIT, TEMP_GOAL, TEMP_PLAN = instance_to_text_blocksworld(temp_problem, False, config_data, plan_code="")
             states.append(TEMP_INIT)
+        # pddls.append(problem_to_string(p))
+        cur_state = s
+    return states
+
+def custom_get_intermediate_states(domain_path, problem_path, plan_code, config_data, shuffle=False):
+    '''
+    instance: the raw data
+    '''
+    plan_path = "temp_plan"
+    temp_problem_path = "temp_problem"
+    with open(plan_path, "w") as f:
+        f.write(plan_code)
+    val_path = os.getenv("VAL")
+    cmd = f"{val_path}/validate -v {domain_path} {problem_path} {plan_path}"
+    response = os.popen(cmd).read()
+    # print(response)
+    change_str = response.split("-----------------------")[-1]\
+        .split("Plan executed successfully")[0]\
+        .strip().split("\n\n")
+    changes = []
+    for c in change_str:
+        changes.append(c.split("\n")[1:])
+    problem = parse_pddl_problem(problem_path)
+    # pddls = []
+    states = []
+    cur_state = problem.init
+    # even = True
+    for step_idx, change in enumerate(changes):
+        # even = not even
+        del_list = [c.replace("Deleting ", "") for c in change if "Deleting" in c]
+        add_list = [c.replace("Adding ", "") for c in change if "Adding" in c]
+        s = set()
+        for i in cur_state:
+            if str(i) not in del_list:
+                s.add(i)
+        for i in add_list:
+            # TODO @mengkang this requires pddl==0.3.1
+            s.add(Predicate(* i[1:-1].split(" ")))
+        p = Problem(name=problem.name, domain_name=problem.domain_name, requirements=problem.requirements, objects=problem.objects, init=s.copy(), goal=problem.goal)
+        with open(temp_problem_path, "w") as f:
+            f.write(problem_to_string(p))
+        temp_problem = get_problem(temp_problem_path, domain_path)
+        # print(step_idx+1, '\n', problem_to_string(p))
+        # if even:
+        TEMP_INIT, TEMP_GOAL, TEMP_PLAN = instance_to_text_blocksworld(temp_problem, False, config_data, plan_code="")
+        states.append(TEMP_INIT)
         # pddls.append(problem_to_string(p))
         cur_state = s
     return states
@@ -274,7 +370,8 @@ def validate_plan(domain, instance, lm_plan_file):
     :param lm_plan_file: plan file (saved earlier)
     """
     val_path = os.getenv("VAL")
-    cmd = f"{val_path}/validate {domain} {instance} {lm_plan_file}"
+    # TODO @mengkang add "-v"
+    cmd = f"{val_path}/validate -v {domain} {instance} {lm_plan_file}"
     response = os.popen(cmd).read()
 
     print("RESPONSE:::", response)
@@ -317,16 +414,19 @@ def apply_change(change, state):
     :param change: predicted change
     :param state: current state
     """
+    # print(change)
     if "and the " in state and ", and the" not in state:
         state = state.replace("and the ", ", and the ")
     states = state.split(", ")
     states = [s.strip()[4:].strip(".") if s.strip().startswith("and ")\
                else s.strip().strip(".") for s in states]
     changes = change.lower().strip().strip(".").split(", ")
+    # TODO @mengkang modified
+    success = 0
     for c in changes:
         if c.startswith("and "):
             c = c[4:]
-        success = 0
+        # success = 0
         if c.startswith("the hand"):
             old = c.split("was")[1].split("and")[0].strip()
             new = c.split("now")[1].strip()
@@ -405,8 +505,12 @@ def apply_change(change, state):
                 torch.distributed.barrier()
             raise Exception("ERROR")
     sorted_states = [x.strip() for _, x in sorted(zip(priority_states, states))]
-    sorted_states[-1] = "and " + sorted_states[-1]
-    return ", ".join(sorted_states) + "."
+    sorted_states[-1] = " and " + sorted_states[-1]
+    # TODO @mengkang align with that in parse_problem
+    return ", ".join(sorted_states[:-1]) + sorted_states[-1]
+
+    # return ", ".join(sorted_states) + "."
+    
 
 
 def goal_check(goals, blocks_state):
@@ -443,3 +547,8 @@ def extract_init_state(example):
     init_statement = example["question"].split("[STATEMENT]\nAs initial conditions I have that, ")[1]\
         .split("My goal")[0].strip()
     return init_statement
+
+
+# TODO @mengkang
+def custom_extract_init_state(example):
+    return example['init'] + '.'

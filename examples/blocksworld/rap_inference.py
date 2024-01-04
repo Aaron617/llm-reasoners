@@ -51,7 +51,7 @@ if __name__ == '__main__':
     import random
     import torch
     import torch.backends.cudnn
-    from reasoners.lm import LlamaModel, Llama2Model
+    from reasoners.lm import LlamaModel, Llama2Model, GPTCompletionModel
     np.random.seed(1)
     random.seed(1)
     torch.manual_seed(1)
@@ -198,5 +198,33 @@ if __name__ == '__main__':
                depth_limit=depth_limit,
                lm_plan_file=lm_plan_file, **kwargs)
 
+    def openai_main(
+            # llama_path = '/data/haotian/RAP_tune/Llama-2-7b-hf',
+            # peft_path = None,
+            prompt_path: str = 'examples/rap_blocksworld/prompts/prompt.json',
+            data_path: str = 'examples/rap_blocksworld/data/step_4.json',
+            disable_log: bool = False,
+            config_file: str = "examples/rap_blocksworld/data/bw_config.yaml",
+            domain_file: str = "examples/rap_blocksworld/data/generated_domain.pddl",
+            lm_plan_file: str = 'lm_plan.tmp',
+            **kwargs
+    ):
+        from reasoners.lm import GPTCompletionModel
+        key = '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'
+        os.environ["OPENAI_API_KEY"] = key
+        with open(prompt_path) as f:
+            prompt = json.load(f)
+        gpt_model = GPTCompletionModel(
+            model='text-davinci-003',
+            )
+        rap_bw(gpt_model,
+               prompt,
+               disable_log=disable_log,
+               data_path=data_path,
+               config_file=config_file,
+               domain_file=domain_file,
+            #    depth_limit=depth_limit,
+               lm_plan_file=lm_plan_file, **kwargs)
 
-    fire.Fire(exllama_main) # user will need to switch the model in the code
+    # fire.Fire(exllama_main) # user will need to switch the model in the code
+    fire.Fire(openai_main)
