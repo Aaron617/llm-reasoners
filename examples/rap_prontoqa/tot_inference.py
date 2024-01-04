@@ -68,11 +68,13 @@ class ProntoQAToTSearchConfig(SearchConfig[ProntoQAState, ProntoQAAction, Pronto
         intuition = self.base_model.get_loglikelihood(input_prompt, 
             [candidate])[0]
         
-        # print(f" prompt: {self.prompt}")
-        # print(f"action: {action}")
-        # print(f"input_prompt: {input_prompt}")
-        # print("hello")
-        # print(f"state: {state}")
+        print(f" prompt: {self.prompt}")
+        print(f"action: {action}")
+        print(f"input_prompt: {input_prompt}")
+        print("hello")
+        print(f"state: {state}")
+        if len(state)>3:
+            raise Exception
         
         # # Self evaluation reward
         input_prompt = ""
@@ -104,13 +106,13 @@ class ProntoQAToTSearchConfig(SearchConfig[ProntoQAState, ProntoQAAction, Pronto
 
         self_eval = reward  
         print(f" input_prompt: {input_prompt}, reward: {reward}")
-        return intuition*0.5 + self_eval*0.5, {"intuition": intuition, "self_eval":self_eval}
+        return intuition*1.0 + self_eval*0.0, {"intuition": intuition}
 
     def reward(self, state, action, **kwargs) -> tuple[float, dict]:
         # how correct is this last action
         intuition = kwargs["intuition"]
-        self_eval = kwargs["self_eval"]
-        return intuition*0.5 + self_eval*0.5, {"intuition": intuition, "self_eval":self_eval}
+        self_eval = 0
+        return intuition*1.0 + self_eval*0.0, {"intuition": intuition}
 
 def main(model_dir: str,
            search_algo: str = "beam",
